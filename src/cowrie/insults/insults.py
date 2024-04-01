@@ -144,67 +144,70 @@ class LoggingServerProtocol(insults.ServerProtocol):
         it's called once from Avatar.closed() if disconnected
         """
         if self.stdinlogOpen:
-            try:
-                with open(self.stdinlogFile, "rb") as f:
-                    shasum = hashlib.sha256(f.read()).hexdigest()
-                    shasumfile = os.path.join(self.downloadPath, shasum)
-                    if os.path.exists(shasumfile):
-                        os.remove(self.stdinlogFile)
-                        duplicate = True
-                    else:
-                        os.rename(self.stdinlogFile, shasumfile)
-                        duplicate = False
-
-                log.msg(
-                    eventid="cowrie.session.file_download",
-                    format="Saved stdin contents with SHA-256 %(shasum)s to %(outfile)s",
-                    duplicate=duplicate,
-                    outfile=shasumfile,
-                    shasum=shasum,
-                    destfile="",
-                )
-            except OSError:
-                pass
-            finally:
-                self.stdinlogOpen = False
-
-        if self.redirFiles:
-            for rp in self.redirFiles:
-                rf = rp[0]
-
-                if rp[1]:
-                    url = rp[1]
-                else:
-                    url = rf[rf.find("redir_") + len("redir_") :]
+            if not self.file_classified(self.stdinlogFile):
 
                 try:
-                    if not os.path.exists(rf):
-                        continue
-
-                    if os.path.getsize(rf) == 0:
-                        os.remove(rf)
-                        continue
-
-                    with open(rf, "rb") as f:
+                    with open(self.stdinlogFile, "rb") as f:
                         shasum = hashlib.sha256(f.read()).hexdigest()
                         shasumfile = os.path.join(self.downloadPath, shasum)
                         if os.path.exists(shasumfile):
-                            os.remove(rf)
+                            os.remove(self.stdinlogFile)
                             duplicate = True
                         else:
-                            os.rename(rf, shasumfile)
+                            os.rename(self.stdinlogFile, shasumfile)
                             duplicate = False
+
                     log.msg(
                         eventid="cowrie.session.file_download",
-                        format="Saved redir contents with SHA-256 %(shasum)s to %(outfile)s",
+                        format="Saved stdin contents with SHA-256 %(shasum)s to %(outfile)s",
                         duplicate=duplicate,
                         outfile=shasumfile,
                         shasum=shasum,
-                        destfile=url,
+                        destfile="",
                     )
                 except OSError:
                     pass
-            self.redirFiles.clear()
+                finally:
+                    self.stdinlogOpen = False
+
+        if self.redirFiles:
+            if not self.file_classified(self.stdinlogFile):
+                for rp in self.redirFiles:
+                    rf = rp[0]
+
+                    if rp[1]:
+                        url = rp[1]
+                    else:
+                        url = rf[rf.find("redir_") + len("redir_") :]
+
+                    try:
+                        if not os.path.exists(rf):
+                            continue
+
+                        if os.path.getsize(rf) == 0:
+                            os.remove(rf)
+                            continue
+
+                        with open(rf, "rb") as f:
+                            shasum = hashlib.sha256(f.read()).hexdigest()
+                            shasumfile = os.path.join(self.downloadPath, shasum)
+                            if os.path.exists(shasumfile):
+                                os.remove(rf)
+                                duplicate = True
+                            else:
+                                os.rename(rf, shasumfile)
+                                duplicate = False
+                        log.msg(
+                            eventid="cowrie.session.file_download",
+                            format="Saved redir contents with SHA-256 %(shasum)s to %(outfile)s",
+                            duplicate=duplicate,
+                            outfile=shasumfile,
+                            shasum=shasum,
+                            destfile=url,
+                        )
+                    except OSError:
+                        pass
+                self.redirFiles.clear()
 
         if self.ttylogEnabled and self.ttylogOpen:
             ttylog.ttylog_close(self.ttylogFile, time.time())
@@ -234,6 +237,47 @@ class LoggingServerProtocol(insults.ServerProtocol):
 
         insults.ServerProtocol.connectionLost(self, reason)
 
+    def file_classified(self, file_name):
+        input_file_path=CowrieConfig.get("honeypot", "download_path")+'/'+file_name
+        folder_path=CowrieConfig.get("honeypot", "classify_path")
+        os.chmod(input_file_path, 0o777)
+        most_similar_file, similarity = self.find_most_similar_file(input_file_path, folder_path)
+        if most_similar_file and similarity>0.03:
+           
+            destination_file_path = os.path.join(config.scan_file_path, most_similar_file)
+            
+            os.rename(input_file_path, destination_file_path)
+            
+            return true
+        else:
+            
+            return false
+    def find_most_similar_file(self,input_file, folder_path):
+
+        max_similarity = 0.0
+        most_similar_file = None
+        for root, dirs,files in os.walk(folder_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                similarity = self.compare_files(input_file, file_path)
+                if similarity > max_similarity:
+                    max_similarity = similarity
+                    most_similar_file = file
+        return most_similar_file, max_similarity
+
+    def compare_files(self,file1, file2):
+        set1 = set()
+        set2 = set()
+        with open(file1, 'rb') as f1:
+            for line in f1:
+                set1.add(line.strip())
+        with open(file2, 'rb') as f2:
+            for line in f2:
+                set2.add(line.strip())
+        intersection = len(set1.intersection(set2))
+        union = len(set1.union(set2))
+        similarity = intersection / union if union != 0 else 0  # Handle division by zero
+        return similarity
 
 class LoggingTelnetServerProtocol(LoggingServerProtocol):
     """

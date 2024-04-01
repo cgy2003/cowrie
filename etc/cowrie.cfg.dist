@@ -40,6 +40,8 @@ log_path = var/log/cowrie
 # (default: downloads)
 download_path = ${honeypot:state_path}/downloads
 
+# (default: classify)
+classify_path = ${honeypot:state_path}/classify
 
 # Directory for static data files
 #
