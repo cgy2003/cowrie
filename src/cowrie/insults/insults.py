@@ -144,34 +144,19 @@ class LoggingServerProtocol(insults.ServerProtocol):
         it's called once from Avatar.closed() if disconnected
         """
         if self.stdinlogOpen:
-            if not self.file_classified(self.stdinlogFile):
+            
 
                 try:
-                    with open(self.stdinlogFile, "rb") as f:
-                        shasum = hashlib.sha256(f.read()).hexdigest()
-                        shasumfile = os.path.join(self.downloadPath, shasum)
-                        if os.path.exists(shasumfile):
-                            os.remove(self.stdinlogFile)
-                            duplicate = True
-                        else:
-                            os.rename(self.stdinlogFile, shasumfile)
-                            duplicate = False
-
-                    log.msg(
-                        eventid="cowrie.session.file_download",
-                        format="Saved stdin contents with SHA-256 %(shasum)s to %(outfile)s",
-                        duplicate=duplicate,
-                        outfile=shasumfile,
-                        shasum=shasum,
-                        destfile="",
-                    )
+                    log.msg(self.stdinlogFile)
+                    self.file_classified(self.stdinlogFile)
+                    
                 except OSError:
                     pass
                 finally:
                     self.stdinlogOpen = False
 
         if self.redirFiles:
-            if not self.file_classified(self.stdinlogFile):
+            
                 for rp in self.redirFiles:
                     rf = rp[0]
 
@@ -238,20 +223,41 @@ class LoggingServerProtocol(insults.ServerProtocol):
         insults.ServerProtocol.connectionLost(self, reason)
 
     def file_classified(self, file_name):
-        input_file_path=CowrieConfig.get("honeypot", "download_path")+'/'+file_name
+        input_file_path=file_name
         folder_path=CowrieConfig.get("honeypot", "classify_path")
         os.chmod(input_file_path, 0o777)
         most_similar_file, similarity = self.find_most_similar_file(input_file_path, folder_path)
         if most_similar_file and similarity>0.03:
            
-            destination_file_path = os.path.join(config.scan_file_path, most_similar_file)
+            destination_file_path = os.path.join(CowrieConfig.get("honeypot", "download_path"), most_similar_file)
             
             os.rename(input_file_path, destination_file_path)
+            log.msg(
+                        eventid="cowrie.session.file_download",
+                        format="Saved stdin contents  %(destination_file_path)s ",
+                        destination_file_path=destination_file_path,
+                        destfile="",
+                    )
             
-            return true
         else:
+            with open(self.stdinlogFile, "rb") as f:
+                shasum = hashlib.sha256(f.read()).hexdigest()
+                shasumfile = os.path.join(self.downloadPath, shasum)
+                if os.path.exists(shasumfile):
+                    os.remove(self.stdinlogFile)
+                    duplicate = True
+                else:
+                    os.rename(self.stdinlogFile, shasumfile)
+                    duplicate = False
+                log.msg(
+                            eventid="cowrie.session.file_download",
+                            format="Saved stdin contents with SHA-256 %(shasum)s to %(outfile)s",
+                            duplicate=duplicate,
+                            outfile=shasumfile,
+                            shasum=shasum,
+                            destfile="",
+                        )
             
-            return false
     def find_most_similar_file(self,input_file, folder_path):
 
         max_similarity = 0.0
