@@ -1,8 +1,10 @@
-## 蜜罐
+## 
+蜜罐
 
 本项目使用的蜜罐是在开源蜜罐cowrie基础上修改而来。
 
-### 部署
+### 
+部署
 
 - 拉取ubuntu镜像：
 
@@ -36,7 +38,8 @@
   pip3 install --upgrade -r cowrie/requirements.txt
   ```
 
-### 启动
+### 
+启动
 
 每次启动之前要切换到非root用户下，并且激活python虚拟环境
 
