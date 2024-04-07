@@ -1,120 +1,57 @@
-Cowrie
-######
+欢迎来到Cowrie GitHub存储库
 
-Welcome to the Cowrie GitHub repository
-*****************************************
+这是Cowrie SSH和Telnet蜜罐项目的官方存储库。
+Cowrie是一个中高交互SSH和Telnet蜜罐，旨在记录暴力攻击和攻击者执行的shell交互。在中等交互模式（shell）中，它用Python模拟UNIX系统，在高交互模式（代理）中，它作为SSH和Telnet代理，观察攻击者对另一台系统的行为。
+Cowrie <http://github.com/cowrie/cowrie/>_由Michel Oosterhof维护。
+文档
 
-This is the official repository for the Cowrie SSH and Telnet
-Honeypot effort.
-
-What is Cowrie
-*****************************************
-
-Cowrie is a medium to high interaction SSH and Telnet honeypot
-designed to log brute force attacks and the shell interaction
-performed by the attacker. In medium interaction mode (shell) it
-emulates a UNIX system in Python, in high interaction mode (proxy)
-it functions as an SSH and telnet proxy to observe attacker behavior
-to another system.
-
-`Cowrie <http://github.com/cowrie/cowrie/>`_ is maintained by Michel Oosterhof.
-
-Documentation
-****************************************
-
-The Documentation can be found `here <https://cowrie.readthedocs.io/en/latest/index.html>`_.
-
+文档可以在 这里 <https://cowrie.readthedocs.io/en/latest/index.html>_ 找到。
 Slack
-*****************************************
 
-You can join the Cowrie community at the following `Slack workspace <https://www.cowrie.org/slack/>`_.
+您可以加入Cowrie社区的 Slack工作区 <https://www.cowrie.org/slack/>_。
+特点
 
-Features
-*****************************************
+可选择作为模拟shell运行（默认）：
+假文件系统，具有添加/删除文件的功能。包含一个完整的伪文件系统，类似于Debian 5.0安装
+可以添加假文件内容，使攻击者可以cat文件，例如/etc/passwd。只包含最小的文件内容
+Cowrie保存通过wget/curl下载或通过SFTP和scp上传的文件，以便以后检查
+或者代理SSH和Telnet到另一个系统
+作为纯Telnet和SSH代理运行，并进行监视
+或者让Cowrie管理一组QEMU模拟的服务器，以提供要登录的系统 对于这两种设置：
+会话日志以 UML兼容 <http://user-mode-linux.sourceforge.net/>_ 格式存储，可以使用 bin/playlog 实用程序轻松重播。
+支持文件上传的SFTP和SCP
+支持SSH exec命令
+记录直接tcp连接尝试（ssh代理）
+将SMTP连接转发到SMTP蜜罐（例如mailoney <https://github.com/awhitehatter/mailoney>_）
+JSON日志记录，方便在日志管理解决方案中处理 Docker
+有Docker版本可用。
 
-* Choose to run as an emulated shell (default):
-   * Fake filesystem with the ability to add/remove files. A full fake filesystem resembling a Debian 5.0 installation is included
-   * Possibility of adding fake file contents so the attacker can `cat` files such as `/etc/passwd`. Only minimal file contents are included
-   * Cowrie saves files downloaded with wget/curl or uploaded with SFTP and scp for later inspection
+要快速开始并尝试Cowrie，请运行：
+$ docker run -p 2222:2222 cowrie/cowrie:latest
+$ ssh -p 2222 root@localhost
+在Docker Hub上：https://hub.docker.com/r/cowrie/cowrie
+配置Docker中的Cowrie Cowrie在Docker中可以使用环境变量进行配置。 变量以COWRIE_开头，然后是大写的部分名称，后跟大写的部分。 以下是一个示例，用于启用telnet支持：
+COWRIE_TELNET_ENABLED=yes
+或者，Cowrie在Docker中可以使用etc卷来存储配置数据。 在etc卷内创建cowrie.cfg，其中包含以下内容以在Docker中启用Cowrie蜜罐中的telnet：
 
-* Or proxy SSH and telnet to another system
-   * Run as a pure telnet and ssh proxy with monitoring
-   * Or let Cowrie manage a pool of QEMU emulated servers to provide the systems to login to
+[telnet]
+enabled = yes
+要求
 
-For both settings:
+本地运行所需软件：
 
-* Session logs are stored in an `UML Compatible <http://user-mode-linux.sourceforge.net/>`_  format for easy replay with the `bin/playlog` utility.
-* SFTP and SCP support for file upload
-* Support for SSH exec commands
-* Logging of direct-tcp connection attempts (ssh proxying)
-* Forward SMTP connections to SMTP Honeypot (e.g. `mailoney <https://github.com/awhitehatter/mailoney>`_)
-* JSON logging for easy processing in log management solutions
-
-Docker
-*****************************************
-
-Docker versions are available.
-
-* To get started quickly and give Cowrie a try, run::
-
-    $ docker run -p 2222:2222 cowrie/cowrie:latest
-    $ ssh -p 2222 root@localhost
-
-* On Docker Hub: https://hub.docker.com/r/cowrie/cowrie
-
-* Configuring Cowrie in Docker
-
-Cowrie in Docker can be configured using environment variables. The
-variables start with COWRIE_ then have the section name in capitals,
-followed by the stanza in capitals. An example is below to enable
-telnet support::
-
-    COWRIE_TELNET_ENABLED=yes
-
-Alternatively, Cowrie in Docker can use an `etc` volume to store
-configuration data.  Create `cowrie.cfg` inside the etc volume
-with the following contents to enable telnet in your Cowrie Honeypot
-in Docker::
-
-    [telnet]
-    enabled = yes
-
-Requirements
-*****************************************
-
-Software required to run locally:
-
-* Python 3.8+
-* python-virtualenv
-
-For Python dependencies, see `requirements.txt <https://github.com/cowrie/cowrie/blob/master/requirements.txt>`_.
-
-Files of interest:
-*****************************************
-
-* `etc/cowrie.cfg` - Cowrie's configuration file. Default values can be found in `etc/cowrie.cfg.dist <https://github.com/cowrie/cowrie/blob/master/etc/cowrie.cfg.dist>`_.
-* `share/cowrie/fs.pickle` - fake filesystem
-* `etc/userdb.txt` - credentials to access the honeypot
-* `honeyfs/ <https://github.com/cowrie/cowrie/tree/master/honeyfs>`_ - file contents for the fake filesystem - feel free to copy a real system here or use `bin/fsctl`
-* `honeyfs/etc/issue.net` - pre-login banner
-* `honeyfs/etc/motd <https://github.com/cowrie/cowrie/blob/master/honeyfs/etc/issue>`_ - post-login banner
-* `var/log/cowrie/cowrie.json` - transaction output in JSON format
-* `var/log/cowrie/cowrie.log` - log/debug output
-* `var/lib/cowrie/tty/` - session logs, replayable with the `bin/playlog` utility.
-* `var/lib/cowrie/downloads/` - files transferred from the attacker to the honeypot are stored here
-* `share/cowrie/txtcmds/ <https://github.com/cowrie/cowrie/tree/master/share/cowrie/txtcmds>`_ - file contents for simple fake commands
-* `bin/createfs <https://github.com/cowrie/cowrie/blob/master/bin/createfs>`_ - used to create the fake filesystem
-* `bin/playlog <https://github.com/cowrie/cowrie/blob/master/bin/playlog>`_ - utility to replay session logs
-
-Contributors
-***************
-
-Many people have contributed to Cowrie over the years. Special thanks to:
-
-* Upi Tamminen (desaster) for all his work developing Kippo on which Cowrie was based
-* Dave Germiquet (davegermiquet) for TFTP support, unit tests, new process handling
-* Olivier Bilodeau (obilodeau) for Telnet support
-* Ivan Korolev (fe7ch) for many improvements over the years.
-* Florian Pelgrim (craneworks) for his work on code cleanup and Docker.
-* Guilherme Borges (sgtpepperpt) for SSH and telnet proxy (GSoC 2019)
-* And many many others.
+Python 3.8+
+python-virtualenv 对于Python依赖项，请参阅 requirements.txt <https://github.com/cowrie/cowrie/blob/master/requirements.txt>_。 感兴趣的文件：
+etc/cowrie.cfg - Cowrie的配置文件。 默认值可以在 etc/cowrie.cfg.dist <https://github.com/cowrie/cowrie/blob/master/etc/cowrie.cfg.dist>_ 中找到。
+share/cowrie/fs.pickle - 假文件系统
+etc/userdb.txt - 访问蜜罐的凭据
+honeyfs/ <https://github.com/cowrie/cowrie/tree/master/honeyfs>_ - 伪文件系统的文件内容 - 可以复制真实系统到这里或使用 bin/fsctl
+honeyfs/etc/issue.net - 登录前横幅
+honeyfs/etc/motd <https://github.com/cowrie/cowrie/blob/master/honeyfs/etc/issue>_ - 登录后横幅
+var/log/cowrie/cowrie.json - JSON格式的交易输出
+var/log/cowrie/cowrie.log - 日志/调试输出
+var/lib/cowrie/tty/ - 会话日志，可以使用 bin/playlog 实用程序重播。
+var/lib/cowrie/downloads/ - 从攻击者传输到蜜罐的文件存储在这里
+share/cowrie/txtcmds/ <https://github.com/cowrie/cowrie/tree/master/share/cowrie/txtcmds>_ - 简单伪命令的文件内容
+bin/createfs <https://github.com/cowrie/cowrie/blob/master/bin/createfs>_ - 用于创建伪文件系统
+bin/playlog <https://github.com/cowrie/cowrie/blob/master/bin/playlog>_ - 用于重播会话日志的实用程序 
