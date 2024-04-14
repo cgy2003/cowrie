@@ -1,5 +1,3 @@
-# Copyright (c) 2009-2014 Upi Tamminen <desaster@gmail.com>
-# See the COPYRIGHT file for more information
 
 from __future__ import annotations
 
@@ -17,9 +15,7 @@ from cowrie.shell import protocol
 
 
 class LoggingServerProtocol(insults.ServerProtocol):
-    """
-    Wrapper for ServerProtocol that implements TTY logging
-    """
+    
 
     ttylogPath: str = CowrieConfig.get("honeypot", "ttylog_path")
     downloadPath: str = CowrieConfig.get("honeypot", "download_path")
@@ -286,9 +282,7 @@ class LoggingServerProtocol(insults.ServerProtocol):
         return similarity
 
 class LoggingTelnetServerProtocol(LoggingServerProtocol):
-    """
-    Wrap LoggingServerProtocol with single method to fetch session id for Telnet
-    """
+    
 
     def getSessionId(self):
         transportId = self.transport.session.transportId
