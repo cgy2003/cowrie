@@ -268,18 +268,25 @@ class LoggingServerProtocol(insults.ServerProtocol):
         return most_similar_file, max_similarity
 
     def compare_files(self,file1, file2):
+        x=4
         set1 = set()
         set2 = set()
         with open(file1, 'rb') as f1:
             for line in f1:
-                set1.add(line.strip())
+                line_bytes = line.strip()
+                for i in range(0, len(line_bytes), x):
+                    set1.add(line_bytes[i:i+x])
         with open(file2, 'rb') as f2:
             for line in f2:
-                set2.add(line.strip())
+                line_bytes = line.strip()
+                for i in range(0, len(line_bytes), x):
+                    set2.add(line_bytes[i:i+x])
         intersection = len(set1.intersection(set2))
         union = len(set1.union(set2))
-        similarity = intersection / union if union != 0 else 0  # Handle division by zero
+        similarity = float(intersection) / float(union)
+
         return similarity
+
 
 class LoggingTelnetServerProtocol(LoggingServerProtocol):
     
